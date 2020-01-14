@@ -26,5 +26,10 @@ namespace ITvitaeChat2.Backend.Hubs
         {
             await Clients.Group(groupName).SendAsync("ReceiveMessage", user, message);
         }
+
+        public async Task SendFile(string groupName, string user, object file)
+        {
+            await Clients.Group(groupName).SendAsync("ReceiveFile", user, file);
+        }
     }
 }

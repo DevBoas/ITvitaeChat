@@ -6,15 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ITvitaeChat2.Backend.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/values")]
     [ApiController]
     public class ValuesController : ControllerBase
     {
         // GET api/values
         [HttpGet]
-        public ActionResult<IEnumerable<string>> Get()
+        public ActionResult<IEnumerable<string>> GetServerProject()
         {
-            return new string[] { "value1", "value2" };
+            return new string[] { "https://github.com/DevBoas/ITvitaeChat/tree/master/XamChat.Backend", "https://www.youtube.com/watch?v=AlqZ1LpUXeg&t=2329s" };
         }
 
         // GET api/values/5

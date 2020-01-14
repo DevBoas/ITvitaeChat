@@ -4,14 +4,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using ITvitaeChat2.Core.EventHandlers;
+using ITvitaeChat2.Shared.Core.EventHandlers;
 
 namespace ITvitaeChat2.Core
 {
     public class ChatService
     {
         public event EventHandler<MessageEventArgs> OnReceivedMessage;
+
         public event EventHandler<MessageEventArgs> OnEnteredOrExited;
         public event EventHandler<MessageEventArgs> OnConnectionClosed;
+
+        public event EventHandler<FileEventArgs> OnReceivedFile;
 
         HubConnection hubConnection;
         Random random;
@@ -26,10 +30,15 @@ namespace ITvitaeChat2.Core
 
             var port = ":4444";
 
+            //var port = (urlRoot == "localhost" || urlRoot == "10.0.2.2") ?
+            //    (useHttps ? ":5001" : ":5000") :
+            //    string.Empty;
+
             var url = $"http{(useHttps ? "s" : string.Empty)}://{urlRoot}{port}/hubs/chat";
             hubConnection = new HubConnectionBuilder()
             .WithUrl(url)
             .Build();
+
 
            hubConnection.Closed += async (error) =>
             {
@@ -50,6 +59,11 @@ namespace ITvitaeChat2.Core
             hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
             {
                 OnReceivedMessage?.Invoke(this, new MessageEventArgs(message, user));
+            });
+
+            hubConnection.On<string, object>("ReceiveFile", (user, file) =>
+            {
+                OnReceivedFile?.Invoke(this, new FileEventArgs(user, file));
             });
 
             hubConnection.On<string>("Entered", (user) =>
@@ -122,10 +136,15 @@ namespace ITvitaeChat2.Core
             if (!IsConnected)
                 throw new InvalidOperationException("Not connected");
 
-            await hubConnection.InvokeAsync("SendMessageGroup",
-                    group,
-                    userName,
-                    message);
+            await hubConnection.InvokeAsync("SendMessageGroup", group, userName, message);
+        }
+
+        public async Task SendFileAsync(string group, string userName, object file)
+        {
+            if (!IsConnected)
+                throw new InvalidOperationException("Not connected");
+
+            await hubConnection.InvokeAsync("ReceiveFile", group, userName, file);
         }
 
         public List<string> GetRooms()
