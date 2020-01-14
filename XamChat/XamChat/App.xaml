@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Application xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ITvitaeChat2.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!--#region Colors-->
+            <!--Blue-->
+            <Color x:Key="PrimaryColor">#0191a4</Color>
+            <Color x:Key="PrimaryLightColor">#01A7BD</Color>
+            <Color x:Key="PrimaryDarkColor">#207890</Color>
+
+            <!--Orange RGBA=255,109,0,1.00-->
+            <Color x:Key="SecondaryColor">#FF6D00</Color>
+            <Color x:Key="SecondaryLightColor">#ff7c1a</Color>
+            <Color x:Key="SecondaryDarkColor">#e66200</Color>
+            
+            <!--Black-->
+            <Color x:Key="PrimaryTextColor">#000000</Color>
+            <!--White-->
+            <Color x:Key="SecondaryTextColor">#ffffff</Color>
+            <!--Gray-->
+            <Color x:Key="DisabledColor">#aebcbf</Color>
+            <!--#endregion-->
+            
+            <!--#region Microsoft login-->
+            <!--Application (Client) ID-->
+            <x:String x:Key="ClientID">7d16d929-331e-4831-87ee-41101f7cfebf</x:String>
+            
+            <!--Client secret SIDENOTE Normaal sla je dit niet op in de client-side applicatie.-->
+            <x:String x:Key="ClientSecret">z68J6y5ql.TakbAG_[gMOQFcsXcV:RRc</x:String>
+            
+            <!--Tenent ID-->
+            <x:String x:Key="TenantID" >0096aa9a-45c9-4762-8c14-7574afb2efae</x:String>
+            
+            <!--Broker Redirect Uri On Ios-->
+            <x:String x:Key="BrokerRedirectUriOnIos">msauth.com.ITvitae.ITvitaeChat2://auth</x:String>
+            
+            <!--Scopes Things we want to do with the user his account-->
+            <x:Array x:Key="Scopes" Type="{x:Type x:String}">
+                <x:String>User.Read</x:String>
+            </x:Array>
+            <!--#endregion-->
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

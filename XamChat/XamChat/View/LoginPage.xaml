@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:svg="clr-namespace:FFImageLoading.Svg.Forms;assembly=FFImageLoading.Svg.Forms"
+             xmlns:cv="clr-namespace:ITvitaeChat2.View.NewFolder"
+             xmlns:helpers="clr-namespace:ITvitaeChat2.Helpers"
+             mc:Ignorable="d"           
+             x:Class="ITvitaeChat2.View.LoginPage"
+             Title="{Binding Title}">
+
+    <ContentPage.Resources>
+        <helpers:ViewModelHelper x:Key="ViewModelHelper"/>
+    </ContentPage.Resources>
+    
+    <ContentPage.Content>
+        <Grid VerticalOptions="Fill">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="AUTO"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Image Grid.Row="0" Source="logo_itvitae_liggend_anders_denken.png"/>
+
+            <svg:SvgCachedImage Grid.Row="1" HeightRequest="100" WidthRequest="100" Source="arrow_icon.svg" HorizontalOptions="Center" VerticalOptions="Center">
+                <svg:SvgCachedImage.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding pLogInCommand}"/>
+                </svg:SvgCachedImage.GestureRecognizers>
+            </svg:SvgCachedImage>
+            
+
+            <Label Grid.RowSpan="2" VerticalOptions="End" HorizontalOptions="Center" Text="Sponsered by Mijntje, Boaz and Maurice" FontSize="Small"/>
+
+            <cv:BusyCardView Grid.RowSpan="2" x:Name="BusyCard" IsVisible="{Binding IsBusy}" d:IsVisible="false"  HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"/>
+        
+        </Grid>
+    </ContentPage.Content>
+</ContentPage>

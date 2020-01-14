@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<TabbedPage
+    x:Class="ITvitaeChat2.View.HomePage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:android="clr-namespace:Xamarin.Forms.PlatformConfiguration.AndroidSpecific;assembly=Xamarin.Forms.Core"
+    xmlns:pages="clr-namespace:ITvitaeChat2.View"
+    android:TabbedPage.BarItemColor="{StaticResource PrimaryColor}"
+    android:TabbedPage.BarSelectedItemColor="{StaticResource SecondaryColor}"
+    android:TabbedPage.IsSwipePagingEnabled="False"
+    android:TabbedPage.ToolbarPlacement="Bottom"
+    BarBackgroundColor="{OnPlatform Android=White}">
+    <pages:ITvitaeChatNavigationPage Title="Dashboard" Icon="{OnPlatform Android=tab_dashboard, iOS=tab_chat}">
+        <x:Arguments>
+            <pages:LobbyPage />
+        </x:Arguments>
+    </pages:ITvitaeChatNavigationPage>
+
+    <pages:ITvitaeChatNavigationPage Title="Profile" Icon="{OnPlatform Android=tab_person, iOS=tab_dashboard}">
+        <x:Arguments>
+            <pages:ProfilePage />
+        </x:Arguments>
+    </pages:ITvitaeChatNavigationPage>
+</TabbedPage>
