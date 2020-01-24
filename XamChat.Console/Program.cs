@@ -19,7 +19,9 @@ namespace ITvitaeChat2.ConsoleApp
             service.OnReceivedMessage += Service_OnReceivedMessage;
             Console.WriteLine("Enter IP:");
             var ip = Console.ReadLine();
-            service.Init(ip, ip != "localhost");
+            Console.WriteLine("Enter port number:");
+            var port = Console.ReadLine();
+            service.Init(ip, port, ip != "localhost");
 
             await service.ConnectAsync();
             Console.WriteLine("You are connected...");
@@ -41,7 +43,7 @@ namespace ITvitaeChat2.ConsoleApp
                 }
                 else
                 {
-                    await service.SendMessageAsync(room, name, text);
+                    await service.SendMessageAsync(room, name, DateTime.Now, text);
                 }
             }
             while (keepGoing);

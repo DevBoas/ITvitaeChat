@@ -61,6 +61,15 @@
                        HorizontalOptions="FillAndExpand"
                        Visual="Material"/>
 
+                <Entry Text="{Binding ServerPort}"
+                       Placeholder="Server port:"
+                       PlaceholderColor="{StaticResource PrimaryColor}"
+                       TextColor="{StaticResource PrimaryTextColor}"
+                       IsSpellCheckEnabled="False"
+                       IsTextPredictionEnabled="false"
+                       Margin="10,10,10,0"
+                       HorizontalOptions="FillAndExpand"
+                       Visual="Material"/>
             </StackLayout>
         </ScrollView>
     </ContentPage.Content>

@@ -7,11 +7,14 @@ namespace ITvitaeChat2.Helpers
     {
         public static string AppCenterAndroid = "AC_ANDROID";
 
-#if DEBUG
-        static readonly string defaultIP = DeviceInfo.Platform == DevicePlatform.Android ? "10.0.2.2" : "localhost";
-#else
-        static readonly string defaultIP = "xamchatr.azurewebsites.net";
-#endif
+        #if DEBUG
+            private static readonly string defaultIP = DeviceInfo.Platform == DevicePlatform.Android ? "10.0.2.2" : "localhost";
+            private static readonly string defaultPort = DeviceInfo.Platform == DevicePlatform.Android ? "5001" : "5000";
+        #else
+            private static readonly string defaultIP = "10.10.1.34";
+            private static readonly string defaultPort = "4444";
+        #endif
+
         public static bool UseHttps
         {
             get => (defaultIP != "localhost" && defaultIP != "10.0.2.2");
@@ -23,29 +26,35 @@ namespace ITvitaeChat2.Helpers
             set => Preferences.Set(nameof(ServerIP), value);
         }
 
-        static readonly string defaultFirstName = $"{DeviceInfo.Platform} User firstname";
+        public static string ServerPort
+        {
+            get => Preferences.Get(nameof(ServerPort), defaultPort);
+            set => Preferences.Set(nameof(ServerPort), value);
+        }
+
+        private static readonly string defaultFirstName = $"{DeviceInfo.Platform} User firstname";
         public static string UserFirstName
         {
             get => Preferences.Get(nameof(UserFirstName), defaultFirstName);
             set => Preferences.Set(nameof(UserFirstName), value);
         }
 
-        static readonly string defaultLastName = "User lastname";
+        private static readonly string defaultLastName = "User lastname";
         public static string UserLastName
         {
             get => Preferences.Get(nameof(UserLastName), defaultLastName);
             set => Preferences.Set(nameof(UserLastName), value);
         }
 
-        //TODO Store string containing the url of user image
-        static readonly string defaultPicture = "tab_person.png";
+        //TODO Store user image
+        private static readonly string defaultPicture = "tab_person.png";
         public static string UserPicture
         {
             get => Preferences.Get(nameof(UserPicture), defaultPicture);
             set => Preferences.Set(nameof(UserPicture), value);
         }
 
-        static readonly string defaultEmail = "firstname.lastname@itvitaelearning.nl";
+        private static readonly string defaultEmail = "firstname.lastname@itvitaelearning.nl";
         public static string UserEmail
         {
             get => Preferences.Get(nameof(UserEmail), defaultEmail);

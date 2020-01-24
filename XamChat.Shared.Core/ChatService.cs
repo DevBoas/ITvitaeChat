@@ -5,45 +5,62 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using ITvitaeChat2.Core.EventHandlers;
 using ITvitaeChat2.Shared.Core.EventHandlers;
+using Microsoft.AspNetCore.Http;
 
 namespace ITvitaeChat2.Core
 {
+    public class FileUploadAPI
+    {
+        public IFormFile files { get; set; }
+    }
+
     public class ChatService
     {
         public event EventHandler<MessageEventArgs> OnReceivedMessage;
 
+        public event EventHandler<FileEventArgs> OnReceivedFile;
+
         public event EventHandler<MessageEventArgs> OnEnteredOrExited;
         public event EventHandler<MessageEventArgs> OnConnectionClosed;
 
-        public event EventHandler<FileEventArgs> OnReceivedFile;
+        private HubConnection hubConnection;
+        private Random random;
 
-        HubConnection hubConnection;
-        Random random;
-
-        bool IsConnected { get; set; }
-        Dictionary<string, string> ActiveChannels { get; } = new Dictionary<string, string>();
+        private bool IsConnected { get; set; }
+        private Dictionary<string, string> ActiveChannels { get; } = new Dictionary<string, string>();
 
 
-        public void Init(string urlRoot, bool useHttps)
+        public void Init(string urlRoot, string portNumber ,bool useHttps)
         {
-            random = new Random();
 
-            var port = ":4444";
+            //-----ITvitae server url = "10.10.1.34"-----//
+            //-----ITvitae server port = ":4444"-----//
 
-            //var port = (urlRoot == "localhost" || urlRoot == "10.0.2.2") ?
-            //    (useHttps ? ":5001" : ":5000") :
-            //    string.Empty;
+            // If no portnumber is provided user standard localhost ports
+            if (portNumber.Equals(string.Empty))
+            {
+                // If urlRoot = 'localhost' or '10.0.2.2' -->
+                // use port 5001 incase of using https else use port 5000
+                portNumber = (urlRoot == "localhost" || urlRoot == "10.0.2.2") ? (useHttps ? ":5001" : ":5000") : string.Empty;
+            }
 
-            var url = $"http{(useHttps ? "s" : string.Empty)}://{urlRoot}{port}/hubs/chat";
+            string url = $"http{(useHttps ? "s" : string.Empty)}://{urlRoot}:{portNumber}/hubs/chat";
+            
+            // Setup the hubconnection with the newly created url
             hubConnection = new HubConnectionBuilder()
             .WithUrl(url)
             .Build();
 
+            // Initialize random so we can use it
+            random = new Random();
 
-           hubConnection.Closed += async (error) =>
+            // Setup the hubConnection events
+            hubConnection.Closed += async (error) =>
             {
-                OnConnectionClosed?.Invoke(this, new MessageEventArgs("Connection closed...", string.Empty));
+                OnConnectionClosed?.Invoke(this, new MessageEventArgs("Connection closed...", DateTime.Now, string.Empty));
                 IsConnected = false;
+
+                // Wait a little and try to reconnect
                 await Task.Delay(random.Next(0, 5) * 1000);
                 try
                 {
@@ -56,31 +73,34 @@ namespace ITvitaeChat2.Core
                 }
             };
 
-            hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+            // Receive message
+            hubConnection.On<string, DateTime, string>("ReceiveMessage", (user, dateTime, message) =>
             {
-                OnReceivedMessage?.Invoke(this, new MessageEventArgs(message, user));
+                OnReceivedMessage?.Invoke(this, new MessageEventArgs(user, dateTime, message));
             });
 
-            hubConnection.On<string, object>("ReceiveFile", (user, file) =>
+            // Receive file
+            hubConnection.On<string, DateTime, object>("ReceiveFile", (user, dateTime, file) =>
             {
-                OnReceivedFile?.Invoke(this, new FileEventArgs(user, file));
+                OnReceivedFile?.Invoke(this, new FileEventArgs(user, dateTime, file));
             });
 
-            hubConnection.On<string>("Entered", (user) =>
+            // Entered 
+            hubConnection.On<string, DateTime>("Entered", (user, dateTime) =>
             {
-                OnEnteredOrExited?.Invoke(this, new MessageEventArgs($"{user} entered.", user));
+                OnEnteredOrExited?.Invoke(this, new MessageEventArgs(user, dateTime, $"{user} entered."));
             });
 
-
-            hubConnection.On<string>("Left", (user) =>
+            // Exited
+            hubConnection.On<string, DateTime>("Left", (user, dateTime) =>
             {
-                OnEnteredOrExited?.Invoke(this, new MessageEventArgs($"{user} left.", user));
+                OnEnteredOrExited?.Invoke(this, new MessageEventArgs(user, dateTime, $"{user} left."));
             });
 
-
-            hubConnection.On<string>("EnteredOrLeft", (message) =>
+            // Entered or left ??? <--- WTF (vanuit tutorial, geen idee waar voor nodig)
+            hubConnection.On<string, DateTime>("EnteredOrLeft", (message, dateTime) =>
             {
-                OnEnteredOrExited?.Invoke(this, new MessageEventArgs(message, message));                
+                OnEnteredOrExited?.Invoke(this, new MessageEventArgs("???Someone???", dateTime, message));                
             });
         }
 
@@ -111,40 +131,40 @@ namespace ITvitaeChat2.Core
             IsConnected = false;
         }
 
-        public async Task LeaveChannelAsync(string group, string userName)
+        public async Task LeaveChannelAsync(string group, string userName, DateTime dateTime)
         {
             if (!IsConnected || !ActiveChannels.ContainsKey(group))
                 return;
           
-            await hubConnection.SendAsync("RemoveFromGroup", group, userName);
+            await hubConnection.SendAsync("RemoveFromGroup", group, userName, dateTime);
 
             ActiveChannels.Remove(group);
         }
 
-        public async Task JoinChannelAsync(string group, string userName)
+        public async Task JoinChannelAsync(string group, string userName, DateTime dateTime)
         {
             if (!IsConnected || ActiveChannels.ContainsKey(group))
                 return;
         
-            await hubConnection.SendAsync("AddToGroup", group, userName);
+            await hubConnection.SendAsync("AddToGroup", group, userName, dateTime);
             ActiveChannels.Add(group, userName);
 
         }
 
-        public async Task SendMessageAsync(string group, string userName, string message)
+        public async Task SendMessageAsync(string group, string userName, DateTime dateTime, string message)
         {
             if (!IsConnected)
                 throw new InvalidOperationException("Not connected");
 
-            await hubConnection.InvokeAsync("SendMessageGroup", group, userName, message);
+            await hubConnection.InvokeAsync("SendMessageGroup", group, userName, dateTime, message);
         }
 
-        public async Task SendFileAsync(string group, string userName, object file)
+        public async Task SendFileAsync(string group, string userName, DateTime dateTime, object file)
         {
             if (!IsConnected)
                 throw new InvalidOperationException("Not connected");
 
-            await hubConnection.InvokeAsync("ReceiveFile", group, userName, file);
+            await hubConnection.InvokeAsync("SendFileGroup", group, userName, dateTime, file);
         }
 
         public List<string> GetRooms()

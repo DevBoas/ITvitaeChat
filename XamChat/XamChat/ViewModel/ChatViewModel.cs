@@ -8,17 +8,50 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using Plugin.FilePicker;
 using System.Diagnostics;
+using ITvitaeChat2.Services;
+using System.Net.Http;
+using System.Collections.Generic;
+using System.Net.Http.Formatting;
+using Plugin.FilePicker.Abstractions;
+using Microsoft.AspNetCore.Http;
+using System.Net.Http.Headers;
 
 namespace ITvitaeChat2.ViewModel
 {
+    /// <summary>
+    /// Class containing Microsoft.AspNetCore.Http.IFormFile
+    /// </summary>
+    //public class FileUploadAPI
+    //{
+    //    public IFormFile files { get; set; }
+    //}
+
     public class ChatViewModel : ViewModelBase
     {
+        // DialogService
+        private DialogServices DialogServices;
+
+        // Chat file
+        public ChatFile ChatFile { get; }
+
+        // Chat message
         public ChatMessage ChatMessage { get; }
 
-        public ObservableCollection<ChatMessage> Messages { get; }
+        // Collection containing abstract baseclass of messages. Can hold things like string messages but also file messages
+        public ObservableCollection<BaseMessage> BaseMessages { get; }
+
+        // Selected item
+        private BaseMessage selectedItem;
+        public BaseMessage SelectedItem
+        {
+            get => selectedItem;
+            set => SetProperty(ref selectedItem, value);
+        }
+
+        // Users
         public ObservableCollection<User> Users { get; }
 
-        bool isConnected;
+        private bool isConnected;
         public bool IsConnected
         {
             get => isConnected;
@@ -35,6 +68,8 @@ namespace ITvitaeChat2.ViewModel
         public Command SendMessageCommand { get; }
         public Command ConnectCommand { get; }
         public Command DisconnectCommand { get; }
+        public Command DownloadFileCommand { get; }
+        public Command SelectionChangedCommand { get; }
 
         Random random;
         public ChatViewModel()
@@ -44,50 +79,57 @@ namespace ITvitaeChat2.ViewModel
 
             Title = Settings.Group;
 
+            DialogServices = new DialogServices();
+
             ChatMessage = new ChatMessage();
-            Messages = new ObservableCollection<ChatMessage>();
+            ChatFile = new ChatFile();
+            BaseMessages = new ObservableCollection<BaseMessage>();
             Users = new ObservableCollection<User>();
 
             SendMessageCommand = new Command(async () => await SendMessage());
             ConnectCommand = new Command(async () => await Connect());
             DisconnectCommand = new Command(async () => await Disconnect());
             SendFileCommand = new Command(async () => await SendFile());
+            DownloadFileCommand = new Command(async (object chatFile) => await DownloadFile(chatFile as ChatFile));
+            SelectionChangedCommand = new Command(async (object selectedItem) => await SelectionChanged(selectedItem));
 
             random = new Random();
 
-            ChatService.Init(Settings.ServerIP, Settings.UseHttps);
+            // Initiate the connection between client and server
+            ChatService.Init(Settings.ServerIP, Settings.ServerPort ,Settings.UseHttps);
 
+            // Received message event handling
             ChatService.OnReceivedMessage += (sender, args) =>
             {
-                SendLocalMessage(args.Message, args.User);
+                SendLocalMessage(args.User, args.DateTime, args.Message);
                 AddRemoveUser(args.User, true);
             };
 
+            // Received file event handling
+            ChatService.OnReceivedFile += (sender, args) =>
+            {
+                SendLocalFile(args.User, args.DateTime, args.File);
+                AddRemoveUser(args.User, true);
+            };
+
+            // Leave or enter event handling
             ChatService.OnEnteredOrExited += (sender, args) =>
             {
                 AddRemoveUser(args.User, args.Message.Contains("entered"));
             };
 
+            // Connection closed event handling
             ChatService.OnConnectionClosed += (sender, args) =>
             {
-                SendLocalMessage(args.Message, args.User);  
+                SendLocalMessage(args.User, args.DateTime, args.Message);  
             };
         }
 
-        async Task SendFile()
-        {
-            var file = await CrossFilePicker.Current.PickFile();
-            if (file != null)
-            {
-                String fileName = file.FileName;
-                //Debug.Print(fileName);
-                await ChatService.SendMessageAsync(Settings.Group,
-                   Settings.UserFirstName,
-                   file.FilePath);
-            }
-        }
-
-        async Task Connect()
+        /// <summary>
+        /// Method for connecting to the server
+        /// </summary>
+        /// <returns></returns>
+        private async Task Connect()
         {
             if (IsConnected)
                 return;
@@ -95,16 +137,16 @@ namespace ITvitaeChat2.ViewModel
             {
                 IsBusy = true;
                 await ChatService.ConnectAsync();
-                await ChatService.JoinChannelAsync(Settings.Group, Settings.UserFirstName);
+                await ChatService.JoinChannelAsync(Settings.Group, Settings.UserFirstName, DateTime.Now);
                 IsConnected = true;
 
                 AddRemoveUser(Settings.UserFirstName, true);
                 await Task.Delay(500);
-                SendLocalMessage("Connected...", Settings.UserFirstName);
+                SendLocalMessage(Settings.UserFirstName, DateTime.Now, "Connected...");
             }
             catch (Exception ex)
             {
-                SendLocalMessage($"Connection error: {ex.Message}", Settings.UserFirstName);
+                SendLocalMessage(Settings.UserFirstName, DateTime.Now, $"Connection error: {ex.Message}");
             }
             finally
             {
@@ -112,58 +154,166 @@ namespace ITvitaeChat2.ViewModel
             }
         }
 
-        async Task Disconnect()
+        /// <summary>
+        /// Method for disconnecting from the server signalR hub
+        /// </summary>
+        /// <returns>void</returns>
+        private async Task Disconnect()
         {
             if (!IsConnected)
                 return;
-            await ChatService.LeaveChannelAsync(Settings.Group, Settings.UserFirstName);
+            await ChatService.LeaveChannelAsync(Settings.Group, Settings.UserFirstName, DateTime.Now);
             await ChatService.DisconnectAsync();
             IsConnected = false;
-            SendLocalMessage("Disconnected...", Settings.UserFirstName);
+            SendLocalMessage(Settings.UserFirstName, DateTime.Now, "Disconnected...");
         }
 
-        async Task SendMessage()
+        /// <summary>
+        /// Let's user select any file from his device and send it to every one in the chatroom
+        /// </summary>
+        /// <returns>void</returns>
+        private async Task SendFile()
         {
-            if(!IsConnected)
+            // Check if client is connected to the Server hub
+            if (!IsConnected)
             {
                 await DialogService.DisplayAlert("Not connected", "Please connect to the server and try again.", "OK");
                 return;
             }
+
+            // Let user pick a file
+            FileData fileData = await CrossFilePicker.Current.PickFile();
+
+            // Check if file is null
+            if (fileData == null)
+            {
+                await DialogServices.DisplayAlert("File not found or selected", "Please select the file you want to send", "OK");
+                return;
+            }
+
+            // Try to send the selected file
             try
             {
                 IsBusy = true;
-                await ChatService.SendMessageAsync(Settings.Group,
-                    Settings.UserFirstName,
-                    ChatMessage.Message);
 
-                ChatMessage.Message = string.Empty;
+                // The address to post to
+                Uri uri = new Uri($"http://{Settings.ServerIP}:{Settings.ServerPort}/api/files");
+
+                // Convert user picked file to HttpContent containing StreamContent. Streamcontent is good in case of larger files.
+                HttpContent fileStreamContent = new StreamContent(fileData.GetStream());
+                fileStreamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") { Name = "formFile", FileName = fileData.FileName };
+                fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                using (HttpClient client = new HttpClient())
+                {
+                    // For each parameter in the API add that parameter. In this case the folder name and the file itself.
+                    using (MultipartFormDataContent formData = new MultipartFormDataContent())
+                    {
+                        formData.Add(new StringContent(Settings.UserEmail), "folderName");
+                        formData.Add(fileStreamContent);
+                        HttpResponseMessage responseMessage = await client.PostAsync(uri, formData);
+
+                        await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                SendLocalMessage($"Send failed: {ex.Message}", Settings.UserFirstName);
+                SendLocalMessage(Settings.UserFirstName, DateTime.Now, $"Send failed: {ex.Message}");
             }
             finally
             {
                 IsBusy = false;
             }
+            
         }
 
-        private void SendLocalMessage(string message, string user)
+        /// <summary>
+        /// Add this file only locally to the base message collection
+        /// </summary>
+        /// <param name="file">The file</param>
+        /// <param name="dateTime">The datetime of send</param>
+        /// <param name="user">The user that sends the file</param>
+        private void SendLocalFile(string user, DateTime dateTime, object file)
         {
             Device.BeginInvokeOnMainThread(() =>
             {
                 var first = Users.FirstOrDefault(u => u.Name == user);
 
-                Messages.Insert(0, new ChatMessage
+                BaseMessages.Insert(0, new ChatFile
                 {
-                    Message = message,
+                    File = file,
+                    MessageDate = dateTime,
                     User = user,
                     Color = first?.Color ?? Color.FromRgba(0, 0, 0, 0)
                 });
             });
         }
 
-        void AddRemoveUser(string name, bool add)
+        private async Task DownloadFile(ChatFile chatFile)
+        {
+            await DialogServices.DisplayAlert("Download file...", chatFile.File.ToString(), "OK");
+        }
+
+        /// <summary>
+        /// Send a message to everyone in the chatroom
+        /// </summary>
+        /// <returns>Void</returns>
+        private async Task SendMessage()
+        {
+            // Check if client is connected to the Server hub
+            if (!IsConnected)
+            {
+                await DialogService.DisplayAlert("Not connected", "Please connect to the server and try again.", "OK");
+                return;
+            }
+
+            // Try to send the message
+            try
+            {
+                IsBusy = true;
+                await ChatService.SendMessageAsync(Settings.Group, Settings.UserFirstName, DateTime.Now, ChatMessage.Message);
+
+                ChatMessage.Message = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                SendLocalMessage($"Send failed: {ex.Message}", DateTime.Now, Settings.UserFirstName);
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Add this message only locally to the base message collection
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="dateTime"></param>
+        /// <param name="user"></param>
+        private void SendLocalMessage(string user, DateTime dateTime, string message)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                var first = Users.FirstOrDefault(u => u.Name == user);
+
+                BaseMessages.Insert(0, new ChatMessage
+                {
+                    Message = message,
+                    MessageDate = dateTime,
+                    User = user,
+                    Color = first?.Color ?? Color.FromRgba(0, 0, 0, 0)
+                });
+            });
+        }
+
+        /// <summary>
+        /// Method for adding or removing a User.
+        /// </summary>
+        /// <param name="name">User to be added or removed</param>
+        /// <param name="add">True if adding, false if removing</param>
+        private void AddRemoveUser(string name, bool add)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return;
@@ -171,7 +321,7 @@ namespace ITvitaeChat2.ViewModel
             {
                 if (!Users.Any(u => u.Name == name))
                 {
-                    var color = Messages.FirstOrDefault(m => m.User == name)?.Color ?? Color.FromRgba(0, 0, 0, 0);
+                    var color = BaseMessages.FirstOrDefault(m => m.User == name)?.Color ?? Color.FromRgba(0, 0, 0, 0);
                     Device.BeginInvokeOnMainThread(() =>
                         {
                             Users.Add(new User { Name = name, Color = color });
@@ -190,5 +340,18 @@ namespace ITvitaeChat2.ViewModel
                 }
             }
         }
+
+        private Task SelectionChanged(object selectedItem)
+        {
+            if (selectedItem is ChatFile)
+            {
+                DownloadFileCommand.Execute(selectedItem as ChatFile);
+            }
+
+            SelectedItem = null;
+            return Task.CompletedTask;
+        }
     }
+
+
 }

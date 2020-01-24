@@ -7,7 +7,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:model="clr-namespace:ITvitaeChat2.Model"
     xmlns:viewmodel="clr-namespace:ITvitaeChat2.ViewModel"
-    xmlns:cv="clr-namespace:ITvitaeChat2.View.NewFolder"
+    xmlns:cv="clr-namespace:ITvitaeChat2.View.CustomViews"
+    xmlns:helpers="clr-namespace:ITvitaeChat2.Helpers"
+    xmlns:cv1="clr-namespace:ITvitaeChat2.View.NewFolder"
     xmlns:ffimage="clr-namespace:FFImageLoading.Forms;assembly=FFImageLoading.Forms"
     Title="{Binding Title}"
     mc:Ignorable="d">
@@ -19,6 +21,19 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem x:Name="ToolbarDone" Text="Leave" />
     </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <DataTemplate x:Key="ChatMessageView">
+            <cv:ChatMessageView/>
+        </DataTemplate>
+        <DataTemplate x:Key="ChatFileView">
+            <cv:ChatFileView/>
+        </DataTemplate>
+
+        <helpers:BaseMessageTemplateSelector x:Key="BaseMessageTemplateSelector"
+                                          ChatMessageTemplate="{StaticResource ChatMessageView}"
+                                          ChatFileTemplate="{StaticResource ChatFileView}"/>
+    </ContentPage.Resources>
     
     <Grid ColumnSpacing="0" RowSpacing="0">
         <Grid.RowDefinitions>
@@ -27,6 +42,7 @@
             <RowDefinition Height="70" />
         </Grid.RowDefinitions>
         
+        <!--Frame containing all users in the chatroom-->
         <Frame
             Grid.ColumnSpan="2"
             Margin="0"
@@ -38,6 +54,7 @@
                 Grid.Row="0"
                 ItemsLayout="HorizontalList"
                 ItemsSource="{Binding Users}">
+                <!--Designtime 'fake' users-->
                 <d:CollectionView.ItemsSource>
                     <x:Array Type="{x:Type model:User}">
                         <model:User Name="James" FirstLetter="J" Color="Red" />
@@ -72,72 +89,31 @@
             </CollectionView>
         </Frame>
         
+        <!--CollectionView containing send and received base messages-->
         <CollectionView
+            x:Name="MessagesCollectionView"
             Grid.Row="1"
             Grid.ColumnSpan="2"
-            ItemsSource="{Binding Messages}"
-            Rotation="180">
+            ItemsSource="{Binding BaseMessages}"
+            ItemTemplate="{StaticResource BaseMessageTemplateSelector}"
+            Rotation="180"
+            SelectionMode="Single"
+            SelectionChangedCommand="{Binding SelectionChangedCommand}"
+            SelectionChangedCommandParameter="{Binding Source={x:Reference MessagesCollectionView}, Path=SelectedItem}"
+            SelectedItem="{Binding SelectedItem}">
             <d:CollectionView.ItemsSource>
-                <x:Array Type="{x:Type model:ChatMessage}">
+                <x:Array Type="{x:Type model:BaseMessage}">
                     <model:ChatMessage FirstLetter="J" Message="You touch my tralala"
                         User="James" Color="Red" />
                     <model:ChatMessage FirstLetter="H" Message="Oelala"
                         User="Heather" Color="Pink" />
                     <model:ChatMessage FirstLetter="M" Message="Jajaaa"
                         User="Motz" Color="Orange" />
+                    <model:ChatFile FirstLetter="B" Thumbnail="baseline_attach_file_white_48.png" 
+                                    User="Bertus" Color="Accent"/>
                 </x:Array>
             </d:CollectionView.ItemsSource>
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Grid
-                        Padding="10"
-                        ColumnSpacing="0"
-                        Rotation="180">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Frame
-                            Grid.Column="0"
-                            Padding="0"
-                            BackgroundColor="{Binding Color}"
-                            CornerRadius="20"
-                            HasShadow="True"
-                            HeightRequest="40"
-                            VerticalOptions="CenterAndExpand"
-                            Visual="Material"
-                            WidthRequest="40">
-                            <Label
-                                HorizontalOptions="Center"
-                                Text="{Binding FirstLetter}"
-                                VerticalOptions="Center" />
-                        </Frame>
-                        <Frame
-                            Grid.Column="1"
-                            Margin="5,0,20,0"
-                            Padding="5"
-                            BackgroundColor="{Binding BackgroundColor}"
-                            CornerRadius="20"
-                            Visual="Material">
-                            <Grid>
-                                <Label
-                                Margin="10,5"
-                                Text="{Binding Message}"
-                                TextColor="White"/>
 
-                                <Label
-                                    VerticalOptions="End"
-                                    HorizontalOptions="End"
-                                    Margin="0,0,10,0"
-                                    d:Text="10:00 ✔"
-                                    Text="{Binding NewFormatTest}"/>
-                                <ffimage:CachedImage
-                                     Source="{Binding Message}"/>
-                            </Grid>
-                        </Frame>
-                    </Grid>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
         </CollectionView>
         
         <!--Bottom inputs-->
@@ -208,25 +184,14 @@
                         HorizontalOptions="Center"
                         IsEnabled="{Binding IsNotBusy}"
                         Source="{OnPlatform Android='ic_send.png',
-                                            iOS='ic_send.png',
-                                            UWP='Assets/ic_send.png'}"
+                                            iOS='ic_send.png'}"
                         VerticalOptions="Center" />
                 </Frame>
             </Grid>
 
         </Frame>
 
-        <cv:BusyCardView Grid.RowSpan="3" Grid.ColumnSpan="2" x:Name="BusyCard" IsVisible="{Binding IsBusy}" d:IsVisible="false"  HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"/>
-        
-        <!--<ActivityIndicator
-            Grid.ColumnSpan="2"
-            Grid.RowSpan="3"
-            d:IsRunning="True"
-            d:IsVisible="True"
-            Color="{StaticResource PrimaryDarkColor}"
-            HorizontalOptions="CenterAndExpand"
-            IsRunning="{Binding IsBusy}"
-            IsVisible="{Binding IsBusy}"
-            VerticalOptions="CenterAndExpand" />-->
+        <cv1:BusyCardView Grid.RowSpan="3" Grid.ColumnSpan="2" x:Name="BusyCard" IsVisible="{Binding IsBusy}"  HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"/>
+       
     </Grid>
 </ContentPage>

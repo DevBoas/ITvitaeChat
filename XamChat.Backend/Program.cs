@@ -19,7 +19,6 @@ namespace ITvitaeChat2.Backend
             CreateWebHostBuilder(args).Build().Run();
         }
 
-
         public static IHostBuilder CreateWebHostBuilder(string[] args) =>
            Host.CreateDefaultBuilder(args)
            .ConfigureLogging(logging =>

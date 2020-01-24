@@ -131,7 +131,7 @@ namespace ITvitaeChat2.ViewModel
                     authResult = await App.PCA.AcquireTokenSilent((string[])App.Current.Resources["Scopes"], firstAccount).ExecuteAsync();
                 }
                 // User has not logged in recently so try login normally
-                catch (MsalUiRequiredException ex)
+                catch (MsalUiRequiredException)
                 {
                     Device.BeginInvokeOnMainThread(() => { pLoadingMessage = "Failure"; });
                     

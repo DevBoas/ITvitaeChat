@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ITvitaeChat2.Backend.Hubs;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace ITvitaeChat2.Backend
 {
@@ -28,7 +29,7 @@ namespace ITvitaeChat2.Backend
             {
               builder.AllowAnyMethod()
                   .AllowAnyHeader()
-                  .WithOrigins("http://localhost:5002");
+                  .WithOrigins("http://10.10.1.34:4444");
             }));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
@@ -57,7 +58,7 @@ namespace ITvitaeChat2.Backend
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("./swagger/v1/swagger.json", "ITvitae Chat");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "ITvitae Chat");
                 c.RoutePrefix = string.Empty;
             });
 
@@ -70,7 +71,14 @@ namespace ITvitaeChat2.Backend
                 endpoints.MapControllers();
                 endpoints.MapHub<ChatHub>("/hubs/chat");
             });
-        }
 
+            app.UseHttpsRedirection();
+            app.UseRouting();
+            app.UseStaticFiles();
+            app.Run(async (context) =>
+            {
+                await context.Response.WriteAsync("MVC didn't find anything!");
+            });
+        }
     }
 }

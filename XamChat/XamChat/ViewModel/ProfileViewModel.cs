@@ -47,5 +47,16 @@ namespace ITvitaeChat2.ViewModel
             }
         }
 
+        public string ServerPort
+        {
+            get => Settings.ServerPort;
+            set
+            {
+                if (value == ServerPort)
+                    return;
+                Settings.ServerPort = value.ToLower();
+                OnPropertyChanged();
+            }
+        }
     }
 }
