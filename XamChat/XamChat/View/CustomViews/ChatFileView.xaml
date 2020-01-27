@@ -11,7 +11,8 @@
     <Grid
         Padding="10"
         ColumnSpacing="0"
-        Rotation="180">
+        Rotation="180" 
+        BackgroundColor="Red">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="40" />
@@ -48,9 +49,6 @@
                 <ffimage:CachedImage
                     Margin="10,5"
                     Source="{Binding Thumbnail, FallbackValue='baseline_attach_file_white_48.png', TargetNullValue='baseline_attach_file_white_48.png'}">
-                    <ffimage:CachedImage.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding DownloadFileCommand}"/>
-                    </ffimage:CachedImage.GestureRecognizers>
                 </ffimage:CachedImage>
 
                 <!--Message send time-->

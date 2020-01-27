@@ -97,7 +97,7 @@ namespace ITvitaeChat2.ViewModel
             random = new Random();
 
             // Initiate the connection between client and server
-            ChatService.Init(Settings.ServerIP, Settings.ServerPort ,Settings.UseHttps);
+            ChatService.Init(Settings.ServerIP, Settings.ServerPort , Settings.UseHttps);
 
             // Received message event handling
             ChatService.OnReceivedMessage += (sender, args) =>
@@ -109,7 +109,7 @@ namespace ITvitaeChat2.ViewModel
             // Received file event handling
             ChatService.OnReceivedFile += (sender, args) =>
             {
-                SendLocalFile(args.User, args.DateTime, args.File);
+                SendLocalFile(args.User, args.DateTime, args.FolderName, args.FileName);
                 AddRemoveUser(args.User, true);
             };
 
@@ -200,7 +200,7 @@ namespace ITvitaeChat2.ViewModel
                 IsBusy = true;
 
                 // The address to post to
-                Uri uri = new Uri($"http{(Settings.UseHttps ? "s" : String.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/api/files");
+                Uri postUri = new Uri($"http{(Settings.UseHttps ? "s" : String.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/api/files");
 
                 // Convert user picked file to HttpContent containing StreamContent. Streamcontent is good in case of larger files.
                 HttpContent fileStreamContent = new StreamContent(fileData.GetStream());
@@ -214,13 +214,14 @@ namespace ITvitaeChat2.ViewModel
                     {
                         formData.Add(new StringContent(Settings.UserEmail), "folderName");
                         formData.Add(fileStreamContent);
-                        HttpResponseMessage responseMessage = await client.PostAsync(uri, formData);
+                        HttpResponseMessage responseMessage = await client.PostAsync(postUri, formData);
 
                         await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
 
                         if (responseMessage.IsSuccessStatusCode)
                         {
-                            SendLocalFile(Settings.UserFirstName, DateTime.Now, formFile);
+                            //SendLocalFile(Settings.UserFirstName, DateTime.Now, formFile);
+                            await ChatService.SendFileAsync(Settings.Group, Settings.UserFirstName, DateTime.Now, Settings.UserEmail, fileData.FileName);
                         }
                     }
                 }
@@ -242,7 +243,7 @@ namespace ITvitaeChat2.ViewModel
         /// <param name="file">The file</param>
         /// <param name="dateTime">The datetime of send</param>
         /// <param name="user">The user that sends the file</param>
-        private void SendLocalFile(string user, DateTime dateTime, IFormFile file)
+        private void SendLocalFile(string user, DateTime dateTime, string folderName, string fileName)
         {
             Device.BeginInvokeOnMainThread(() =>
             {
@@ -250,7 +251,8 @@ namespace ITvitaeChat2.ViewModel
 
                 BaseMessages.Insert(0, new ChatFile
                 {
-                    File = file,
+                    FolderName = folderName,
+                    FileName = fileName,
                     MessageDate = dateTime,
                     User = user,
                     Color = first?.Color ?? Color.FromRgba(0, 0, 0, 0)
@@ -260,7 +262,53 @@ namespace ITvitaeChat2.ViewModel
 
         private async Task DownloadFile(ChatFile chatFile)
         {
-            await DialogServices.DisplayAlert("Download file...", chatFile.File.ToString(), "OK");
+            // Check if client is connected to the Server hub
+            if (!IsConnected)
+            {
+                await DialogService.DisplayAlert("Not connected", "Please connect to the server and try again.", "OK");
+                return;
+            }
+
+            // Try to get the file
+            try
+            {
+                IsBusy = true;
+
+                // The address get from
+                Uri getUri = new Uri($"http{(Settings.UseHttps ? "s" : String.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/" +
+                    $"api/files?folderName={chatFile.FolderName}&fileName={chatFile.FileName}");
+
+                using (HttpClient client = new HttpClient())
+                {
+                    // For each parameter in the API add that parameter. In this case the folder name and the file name.
+                    //using (MultipartFormDataContent getData = new MultipartFormDataContent())
+                    //{
+                    //    getData.Add(new StringContent(chatFile.FolderName), "folderName");
+                    //    getData.Add(new StringContent(chatFile.FileName), "fileName");
+
+                    //}
+
+                    HttpResponseMessage responseMessage = await client.GetAsync(getUri);
+
+                    //await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
+
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        //string contentStream = await responseMessage.Content.ReadAsStringAsync();
+                        string fullFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), chatFile.FileName);
+                        byte[] fileByteArray = await responseMessage.Content.ReadAsByteArrayAsync();
+                        File.WriteAllBytes(fullFilePath, fileByteArray);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLocalMessage(Settings.UserFirstName, DateTime.Now, $"Send failed: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         /// <summary>

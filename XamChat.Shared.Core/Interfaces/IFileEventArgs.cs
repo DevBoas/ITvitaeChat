@@ -7,6 +7,7 @@ namespace ITvitaeChat2.Shared.Core.Interfaces
 {
     interface IFileEventArgs
     {
-        IFormFile File { get; }
+        string FolderName { get; }
+        string FileName { get; }
     }
 }

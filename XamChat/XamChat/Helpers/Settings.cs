@@ -17,7 +17,7 @@ namespace ITvitaeChat2.Helpers
 
         public static bool UseHttps
         {
-            get => (ServerIP != "localhost" && ServerIP != "10.0.2.2" && ServerIP != String.Empty);
+            get => (ServerIP != "localhost" && ServerIP != "10.0.2.2");
         }
 
         public static string ServerIP

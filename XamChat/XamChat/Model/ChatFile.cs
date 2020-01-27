@@ -22,11 +22,25 @@ namespace ITvitaeChat2.Model
         private DialogServices DialogServices;
 
         // File (Can be anything)
-        private IFormFile file;
-        public IFormFile File
+        //private IFormFile file;
+        //public IFormFile File
+        //{
+        //    get => file;
+        //    set => SetProperty(ref file, value);
+        //}
+
+        private string fileName;
+        public string FileName
         {
-            get => file;
-            set => SetProperty(ref file, value);
+            get => fileName;
+            set => SetProperty(ref fileName, value);
+        }
+
+        private string folderName;
+        public string FolderName
+        {
+            get => folderName;
+            set => SetProperty(ref folderName, value);
         }
 
         // Thumbnail (If file is an image, show the image. Else show generic thumbnail)
@@ -37,12 +51,12 @@ namespace ITvitaeChat2.Model
             set => SetProperty(ref thumbnail, value);
         }
 
-        //public Command DownloadFileCommand;
+        public Command DownloadFileCommand;
 
-        //public async Task DownloadFile()
-        //{
-        //    await DialogServices.DisplayAlert("Download file...", "Chatfile clicked!", "OK");
-        //}
+        public async Task DownloadFile()
+        {
+            await DialogServices.DisplayAlert("Download file...", "Chatfile clicked!", "OK");
+        }
     }
 }
 
