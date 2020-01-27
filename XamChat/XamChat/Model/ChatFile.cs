@@ -6,6 +6,7 @@ using FFImageLoading.Forms;
 using Xamarin.Forms;
 using System.Threading.Tasks;
 using ITvitaeChat2.Services;
+using Microsoft.AspNetCore.Http;
 
 namespace ITvitaeChat2.Model
 {
@@ -21,8 +22,8 @@ namespace ITvitaeChat2.Model
         private DialogServices DialogServices;
 
         // File (Can be anything)
-        private object file;
-        public object File
+        private IFormFile file;
+        public IFormFile File
         {
             get => file;
             set => SetProperty(ref file, value);

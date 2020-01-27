@@ -15,6 +15,7 @@ using System.Net.Http.Formatting;
 using Plugin.FilePicker.Abstractions;
 using Microsoft.AspNetCore.Http;
 using System.Net.Http.Headers;
+using System.IO;
 
 namespace ITvitaeChat2.ViewModel
 {
@@ -191,13 +192,15 @@ namespace ITvitaeChat2.ViewModel
                 return;
             }
 
+            IFormFile formFile = new StreamContent(fileData.GetStream()) as IFormFile;
+
             // Try to send the selected file
             try
             {
                 IsBusy = true;
 
                 // The address to post to
-                Uri uri = new Uri($"http://{Settings.ServerIP}:{Settings.ServerPort}/api/files");
+                Uri uri = new Uri($"http{(Settings.UseHttps ? "s" : String.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/api/files");
 
                 // Convert user picked file to HttpContent containing StreamContent. Streamcontent is good in case of larger files.
                 HttpContent fileStreamContent = new StreamContent(fileData.GetStream());
@@ -214,6 +217,11 @@ namespace ITvitaeChat2.ViewModel
                         HttpResponseMessage responseMessage = await client.PostAsync(uri, formData);
 
                         await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
+
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            SendLocalFile(Settings.UserFirstName, DateTime.Now, formFile);
+                        }
                     }
                 }
             }
@@ -234,7 +242,7 @@ namespace ITvitaeChat2.ViewModel
         /// <param name="file">The file</param>
         /// <param name="dateTime">The datetime of send</param>
         /// <param name="user">The user that sends the file</param>
-        private void SendLocalFile(string user, DateTime dateTime, object file)
+        private void SendLocalFile(string user, DateTime dateTime, IFormFile file)
         {
             Device.BeginInvokeOnMainThread(() =>
             {

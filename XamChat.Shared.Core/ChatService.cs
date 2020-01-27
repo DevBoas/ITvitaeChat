@@ -9,11 +9,6 @@ using Microsoft.AspNetCore.Http;
 
 namespace ITvitaeChat2.Core
 {
-    public class FileUploadAPI
-    {
-        public IFormFile files { get; set; }
-    }
-
     public class ChatService
     {
         public event EventHandler<MessageEventArgs> OnReceivedMessage;
@@ -34,24 +29,29 @@ namespace ITvitaeChat2.Core
         {
 
             //-----ITvitae server url = "10.10.1.34"-----//
-            //-----ITvitae server port = ":4444"-----//
+            //-----ITvitae server port = "4444"-----//
 
-            // If no portnumber is provided user standard localhost ports
-            if (portNumber.Equals(string.Empty))
-            {
-                // If urlRoot = 'localhost' or '10.0.2.2' -->
-                // use port 5001 incase of using https else use port 5000
-                portNumber = (urlRoot == "localhost" || urlRoot == "10.0.2.2") ? (useHttps ? ":5001" : ":5000") : string.Empty;
-            }
+            //if (urlRoot.Equals(String.Empty))
+            //{
+            //    urlRoot = "10.0.2.2";
+            //}
 
-            string url = $"http{(useHttps ? "s" : string.Empty)}://{urlRoot}:{portNumber}/hubs/chat";
+            //// If no portnumber is provided user standard localhost ports
+            //if (portNumber.Equals(String.Empty))
+            //{
+            //    // If urlRoot = 'localhost' or '10.0.2.2' -->
+            //    // use port 5001 incase of using https else use port 5000
+            //    portNumber = (urlRoot == "localhost" || urlRoot == "10.0.2.2") ? (useHttps ? "5001" : "5000") : string.Empty;
+            //}
+
+            string url = $"http{(useHttps ? "s" : String.Empty)}://{urlRoot}:{portNumber}/hubs/chat";
             
             // Setup the hubconnection with the newly created url
             hubConnection = new HubConnectionBuilder()
             .WithUrl(url)
             .Build();
 
-            // Initialize random so we can use it
+            // Initialize random so we can use it to randomize colors
             random = new Random();
 
             // Setup the hubConnection events
@@ -68,7 +68,6 @@ namespace ITvitaeChat2.Core
                 }
                 catch (Exception ex)
                 {
-                    // Exception!
                     Debug.WriteLine(ex);
                 }
             };
@@ -80,7 +79,7 @@ namespace ITvitaeChat2.Core
             });
 
             // Receive file
-            hubConnection.On<string, DateTime, object>("ReceiveFile", (user, dateTime, file) =>
+            hubConnection.On<string, DateTime, IFormFile>("ReceiveFile", (user, dateTime, file) =>
             {
                 OnReceivedFile?.Invoke(this, new FileEventArgs(user, dateTime, file));
             });

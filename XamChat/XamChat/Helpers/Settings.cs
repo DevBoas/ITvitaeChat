@@ -9,7 +9,7 @@ namespace ITvitaeChat2.Helpers
 
         #if DEBUG
             private static readonly string defaultIP = DeviceInfo.Platform == DevicePlatform.Android ? "10.0.2.2" : "localhost";
-            private static readonly string defaultPort = DeviceInfo.Platform == DevicePlatform.Android ? "5001" : "5000";
+            private static readonly string defaultPort = DeviceInfo.Platform == DevicePlatform.Android ? "5000" : "5001";
         #else
             private static readonly string defaultIP = "10.10.1.34";
             private static readonly string defaultPort = "4444";
@@ -17,18 +17,39 @@ namespace ITvitaeChat2.Helpers
 
         public static bool UseHttps
         {
-            get => (defaultIP != "localhost" && defaultIP != "10.0.2.2");
+            get => (ServerIP != "localhost" && ServerIP != "10.0.2.2" && ServerIP != String.Empty);
         }
 
         public static string ServerIP
         {
-            get => Preferences.Get(nameof(ServerIP), defaultIP);
+            get 
+            {
+                if (Preferences.Get(nameof(ServerIP), defaultIP).Equals(String.Empty))
+                {
+                    return defaultIP;
+                }
+                else
+                {
+                    return Preferences.Get(nameof(ServerIP), defaultIP);
+                }
+                    
+            }
             set => Preferences.Set(nameof(ServerIP), value);
         }
 
         public static string ServerPort
         {
-            get => Preferences.Get(nameof(ServerPort), defaultPort);
+            get 
+            {
+                if (Preferences.Get(nameof(ServerPort), defaultPort).Equals(String.Empty))
+                {
+                    return defaultPort;
+                }
+                else
+                {
+                    return Preferences.Get(nameof(ServerPort), defaultPort);
+                }
+            } 
             set => Preferences.Set(nameof(ServerPort), value);
         }
 

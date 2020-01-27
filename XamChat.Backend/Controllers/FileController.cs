@@ -56,13 +56,14 @@ namespace ITvitaeChat2.Backend.Controllers
                     Directory.CreateDirectory(Environment.ContentRootPath + $"\\{folderName}\\");
                 }
 
-                using (FileStream filestream = System.IO.File.Create(Environment.ContentRootPath + $"\\{folderName}\\" + formFile.FileName))
+                // Save the file to the specified folder
+                using (FileStream filestream = System.IO.File.Create($"{Environment.ContentRootPath}\\{folderName}\\{formFile.FileName}"))
                 {
                     formFile.CopyTo(filestream);
                     filestream.Flush();
-                    CreatedAtActionResult caa = new CreatedAtActionResult("Test", "File", "api/files", $"\\{folderName}\\" + formFile.FileName);
+                    //CreatedAtActionResult caa = new CreatedAtActionResult("Test", "File", "api/files", $"\\{folderName}\\{formFile.FileName}");
 
-                    return caa; //CreatedAtAction("Test", $"\\{folderName}\\" + formFile.FileName);
+                    return CreatedAtAction(nameof(Post), $"\\{folderName}\\{formFile.FileName}");
                 }
             }
             catch (Exception ex)

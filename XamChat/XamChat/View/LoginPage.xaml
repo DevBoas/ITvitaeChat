@@ -28,9 +28,9 @@
                     <TapGestureRecognizer Command="{Binding pLogInCommand}"/>
                 </svg:SvgCachedImage.GestureRecognizers>
             </svg:SvgCachedImage>
-            
 
-            <Label Grid.RowSpan="2" VerticalOptions="End" HorizontalOptions="Center" Text="Sponsered by Mijntje, Boaz and Maurice" FontSize="Small"/>
+
+            <Label Grid.RowSpan="2" VerticalOptions="End" HorizontalOptions="Center" Text="Created by Boas &amp; Maurice" FontSize="Small"/>
 
             <cv:BusyCardView Grid.RowSpan="2" x:Name="BusyCard" IsVisible="{Binding IsBusy}" d:IsVisible="false"  HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"/>
         
