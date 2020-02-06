@@ -33,12 +33,6 @@ namespace ITvitaeChat2
             vViewModelHelper = new ViewModelHelper();
             vPagesHelper = new PagesHelper();
 
-            // This is set when de login button has been clicked now... Don't know if needed anymore
-            //PCA = PublicClientApplicationBuilder.Create((string)App.Current.Resources["ClientID"])
-            //    .WithTenantId((string)App.Current.Resources["TenantID"])
-            //    .WithRedirectUri($"msal{(string)App.Current.Resources["ClientID"]}://auth")
-            //    .Build();
-
             DependencyService.Register<ChatService>();
 
             MainPage = vPagesHelper.pLoginPage;

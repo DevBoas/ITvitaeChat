@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="ITvitaeChat2.View.FolderIOPage"
+             Title="{Binding Title}">
+    <!--<ContentPage.Content>
+        <ListView ItemsSource="{Binding AllFiles}" HasUnevenRows="True" SeparatorVisibility="Default">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextCell Text="{Binding FileName, FallbackValue='Error: No file name found', TargetNullValue='Error: No file name found'}"/>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </ContentPage.Content>-->
+    <ContentPage.Content>
+        <StackLayout Margin="0, 30, 0, 50">
+
+            <Label Text="PCL Storage Folder and File I/O Sample App" />
+            <Label Text="  --- Folder I/O ---" />
+
+            <!-- Display Current Directory -->
+            <Button Text="RootFolder Info." Clicked="DisplayRootFolder" HorizontalOptions="Start" WidthRequest="150" HeightRequest="30" BorderColor="Blue" BorderWidth="1" />
+
+            <!-- Create a new Folder -->
+            <StackLayout Orientation="Horizontal">
+                <Button Text="Create Folder" Clicked="CreateFolder" WidthRequest="150" HeightRequest="30" BorderColor="Blue" BorderWidth="1">
+                    <!-- Enable Button, if Entry gets text input -->
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding Source={x:Reference EntCreateFolder}, Path=Text.Length}" Value="0">
+                            <Setter Property="IsEnabled" Value="False" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Entry x:Name="EntCreateFolder" Placeholder="Input SubFolder Name" Text="" Keyboard="Text" HeightRequest="30" HorizontalOptions="FillAndExpand" />
+            </StackLayout>
+
+            <!-- Check Folder Existence -->
+            <StackLayout Orientation="Horizontal">
+                <Button Text="Check Folder" Clicked="CheckFolder" WidthRequest="150" HeightRequest="30" BorderColor="Blue" BorderWidth="1" />
+                <Entry x:Name="EntCheckFolder" Placeholder="Input SubFolder Name" Keyboard="Text" HeightRequest="30" HorizontalOptions="FillAndExpand" />
+            </StackLayout>
+
+            <!-- Delete Folder -->
+            <StackLayout Orientation="Horizontal">
+                <Button Text="Delete Folder" Clicked="DeleteFolder" WidthRequest="150" HeightRequest="30" BorderColor="Blue" BorderWidth="1" />
+                <Entry x:Name="EntDeleteFolder" Placeholder="Input SubFolder Name" Keyboard="Text" HeightRequest="30" HorizontalOptions="FillAndExpand" />
+            </StackLayout>
+
+            <!-- Display All Folders -->
+            <Button Text="Show Folders" Clicked="GetFolders" HorizontalOptions="Start" WidthRequest="150" HeightRequest="30" BorderColor="Blue" BorderWidth="1" />
+
+            <!-- Display Folder I/O Results -->
+            <Label Text="  --- Folder I/O Results ---" />
+            <ListView x:Name="FolderIOResult" ItemTapped="TappedResultItem" HasUnevenRows="false" RowHeight="25"/>
+            <Button Text="Clear Result in the above List" Clicked="ClearFolderIOResult" HorizontalOptions="Center" WidthRequest="250" HeightRequest="30" BorderColor="Blue" BorderWidth="1" />
+
+        </StackLayout>
+    </ContentPage.Content>
+
+    <!-- Change color, if Entry is focused -->
+    <ContentPage.Resources> 
+        <ResourceDictionary>
+            <Style TargetType="Entry">
+                <Style.Triggers>
+                    <Trigger  TargetType="Entry" Property="IsFocused" Value="True">
+                        <Setter Property="BackgroundColor" Value="Aqua" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+</ContentPage>

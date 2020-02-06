@@ -5,14 +5,18 @@ using Xamarin.Essentials;
 using Xamarin.Forms;
 using ITvitaeChat2.Helpers;
 using ITvitaeChat2.View;
+using System.Windows.Input;
 
 namespace ITvitaeChat2.ViewModel
 {
     public class LobbyViewModel : ViewModelBase
     {
+        public ICommand FolderClickedCommand { get; }
+
         public List<string> Rooms { get; }
         public LobbyViewModel()
         {
+            FolderClickedCommand = new Command(async () => await GoToFolderPage());
             Rooms = ChatService.GetRooms();
         }
 
@@ -28,7 +32,6 @@ namespace ITvitaeChat2.ViewModel
             }
         }
 
-
         public async Task GoToGroupChat(INavigation navigation, string group)
         {
             if (string.IsNullOrWhiteSpace(group))
@@ -41,5 +44,9 @@ namespace ITvitaeChat2.ViewModel
             await navigation.PushModalAsync(new ITvitaeChatNavigationPage(new GroupChatPage()));
         }
         
+        public async Task GoToFolderPage()
+        {
+            await App.Current.MainPage.Navigation.PushModalAsync(new ITvitaeChatNavigationPage(new FolderIOPage()));
+        }
     }
 }

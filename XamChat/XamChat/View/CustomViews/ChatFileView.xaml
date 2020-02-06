@@ -12,7 +12,7 @@
         Padding="10"
         ColumnSpacing="0"
         Rotation="180" 
-        BackgroundColor="Red">
+        d:Rotation="0">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="40" />
@@ -47,7 +47,10 @@
             <Grid>
                 <!--Message thumbnail-->
                 <ffimage:CachedImage
-                    Margin="10,5"
+                    d:BackgroundColor="red"
+                    Margin="5,5,5,20"
+                    HeightRequest="100"
+                    WidthRequest="100"
                     Source="{Binding Thumbnail, FallbackValue='baseline_attach_file_white_48.png', TargetNullValue='baseline_attach_file_white_48.png'}">
                 </ffimage:CachedImage>
 
@@ -56,7 +59,7 @@
                     VerticalOptions="End"
                     HorizontalOptions="End"
                     Margin="0,0,10,0"
-                    d:Text="10:00 ✔"
+                    d:Text="10:00 ✔✔"
                     Text="{Binding NewFormatTest}"/>
             </Grid>
         </Frame>

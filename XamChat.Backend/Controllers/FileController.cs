@@ -11,10 +11,10 @@ namespace ITvitaeChat2.Backend.Controllers
     [Route("api/files")]
     public class FileController : ControllerBase
     {
-        // Potentially dangerous file extensions
+        // Potentially dangerous file extensions TODO Change to allow only files writen here.
         private readonly string[] NotAllowedFiles = new string[] { "exe", "pif", "application", "gadget", "msi", "msp", "com", "scr", "hta", "cpl", "msc", "jar", "bat", "cmd", "vb", "vbs", "js",
         "jse", "ws", "wsf", "wsc", "wsh", "ps1", "ps1xml", "ps2", "ps2xml", "psc1", "psc2", "msh", "msh1", "msh2", "mshxml", "msh1xml", "msh2xml", "scf", "lnk", "inf", "reg", "doc", "xls",
-        "ppt", "docm", "dotm", "xlsm", "xltm", "xlam", "pptm", "potm", "ppam", "ppsm", "sldm" };
+        "ppt", "docm", "dotm", "xlsm", "xltm", "xlam", "pptm", "potm", "ppam", "ppsm", "sldm" , "batch"};
         
         // The server envirement
         private static IWebHostEnvironment Environment;
@@ -25,7 +25,7 @@ namespace ITvitaeChat2.Backend.Controllers
         }
 
         /// <summary>
-        /// Saves a file to the specified folder. Be sure to use an unique foldername for each user.
+        /// Saves a file to the specified folder. Be sure to use an unique foldername for each user. TODO Check if foldername is valid. Must be user itvitae email.
         /// </summary>
         /// <param name="folderName">Folder location to save to.</param>
         /// <param name="formFile">Microsoft.AspNetCore.Http.IFormFile wich contains the user choosen file.</param>
@@ -42,7 +42,7 @@ namespace ITvitaeChat2.Backend.Controllers
             string extension = Path.GetExtension(formFile.FileName).ToLower();
 
             // Check if the file is allowed
-            for (int i = 0; i < NotAllowedFiles.Length; i++)
+            for (byte i = 0; i < NotAllowedFiles.Length; i++)
             {
                 if (extension.Equals($".{NotAllowedFiles[i]}")) return BadRequest($"The file extension '.{NotAllowedFiles[i]}' is not allowed");
             }

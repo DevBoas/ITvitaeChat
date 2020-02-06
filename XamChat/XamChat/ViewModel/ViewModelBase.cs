@@ -19,7 +19,8 @@ namespace ITvitaeChat2.ViewModel
             dialogService ?? (dialogService = DependencyService.Resolve<IDialogService>());
 
         private string loadingMessageTitle = "Loading, please wait...";
-        public string pLoadingMessageTitle {
+        public string pLoadingMessageTitle 
+        {
             get => loadingMessageTitle;
             set => SetProperty(ref loadingMessageTitle, value);
         }
@@ -29,6 +30,20 @@ namespace ITvitaeChat2.ViewModel
         {
             get => loadingMessage;
             set => SetProperty(ref loadingMessage, value);
+        }
+
+        private bool IsRunning = false;
+        public bool pIsRunning
+        {
+            get => IsRunning;
+            set => SetProperty(ref IsRunning, value);
+        }
+
+        private bool HasOKButton = false;
+        public bool pHasOKButton
+        {
+            get => HasOKButton;
+            set => SetProperty(ref HasOKButton, value);
         }
     }
 }

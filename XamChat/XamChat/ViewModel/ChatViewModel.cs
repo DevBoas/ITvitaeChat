@@ -1,5 +1,4 @@
-﻿using MvvmHelpers;
-using Xamarin.Forms;
+﻿using Xamarin.Forms;
 using ITvitaeChat2.Model;
 using System.Threading.Tasks;
 using System;
@@ -7,38 +6,39 @@ using ITvitaeChat2.Helpers;
 using System.Linq;
 using System.Collections.ObjectModel;
 using Plugin.FilePicker;
-using System.Diagnostics;
 using ITvitaeChat2.Services;
 using System.Net.Http;
-using System.Collections.Generic;
-using System.Net.Http.Formatting;
 using Plugin.FilePicker.Abstractions;
 using Microsoft.AspNetCore.Http;
 using System.Net.Http.Headers;
+using PCLStorage;
+using Plugin.Permissions;
+using Plugin.Permissions.Abstractions;
 using System.IO;
+using System.Windows.Input;
 
 namespace ITvitaeChat2.ViewModel
 {
-    /// <summary>
-    /// Class containing Microsoft.AspNetCore.Http.IFormFile
-    /// </summary>
-    //public class FileUploadAPI
-    //{
-    //    public IFormFile files { get; set; }
-    //}
-
     public class ChatViewModel : ViewModelBase
     {
+        #region Variables
         // DialogService
         private DialogServices DialogServices;
 
+        private Random random;
+
+        private static readonly string[] ImageExtensions = new string[] { "jpeg", "jpg", "exif", "tiff", "gif", "bmp", "png" };
+        private static readonly string svg = "svg";
+        #endregion
+
+        #region Properties
         // Chat file
         public ChatFile ChatFile { get; }
 
         // Chat message
         public ChatMessage ChatMessage { get; }
 
-        // Collection containing abstract baseclass of messages. Can hold things like string messages but also file messages
+        // Collection containing abstract baseclass of messages. Can hold things like text messages but also file messages
         public ObservableCollection<BaseMessage> BaseMessages { get; }
 
         // Selected item
@@ -64,15 +64,20 @@ namespace ITvitaeChat2.ViewModel
                 });
             }
         }
-        
-        public Command SendFileCommand { get; }
-        public Command SendMessageCommand { get; }
-        public Command ConnectCommand { get; }
-        public Command DisconnectCommand { get; }
-        public Command DownloadFileCommand { get; }
-        public Command SelectionChangedCommand { get; }
 
-        Random random;
+        public ICommand SendFileCommand { get; }
+        public ICommand SendMessageCommand { get; }
+        public ICommand ConnectCommand { get; }
+        public ICommand DisconnectCommand { get; }
+        public ICommand DownloadFileCommand { get; }
+        public ICommand SelectionChangedCommand { get; }
+        public ICommand pOKClickedCommand { get; }
+        public ICommand pExitCommand { get; }
+        #endregion
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         public ChatViewModel()
         {
             if (DesignMode.IsDesignModeEnabled)
@@ -93,11 +98,13 @@ namespace ITvitaeChat2.ViewModel
             SendFileCommand = new Command(async () => await SendFile());
             DownloadFileCommand = new Command(async (object chatFile) => await DownloadFile(chatFile as ChatFile));
             SelectionChangedCommand = new Command(async (object selectedItem) => await SelectionChanged(selectedItem));
+            pOKClickedCommand = new Command(() => OKClicked());
+            pExitCommand = new Command(async () => await Exit());
 
             random = new Random();
 
             // Initiate the connection between client and server
-            ChatService.Init(Settings.ServerIP, Settings.ServerPort , Settings.UseHttps);
+            ChatService.Init(Settings.ServerIP, Settings.ServerPort, Settings.UseHttps);
 
             // Received message event handling
             ChatService.OnReceivedMessage += (sender, args) =>
@@ -122,7 +129,7 @@ namespace ITvitaeChat2.ViewModel
             // Connection closed event handling
             ChatService.OnConnectionClosed += (sender, args) =>
             {
-                SendLocalMessage(args.User, args.DateTime, args.Message);  
+                SendLocalMessage(args.User, args.DateTime, args.Message);
             };
         }
 
@@ -136,22 +143,40 @@ namespace ITvitaeChat2.ViewModel
                 return;
             try
             {
-                IsBusy = true;
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pIsRunning = true;
+                    pLoadingMessageTitle = "Connecting";
+                    pLoadingMessage = $"Please wait while we connect you to {Settings.Group}.";
+                });
+
                 await ChatService.ConnectAsync();
                 await ChatService.JoinChannelAsync(Settings.Group, Settings.UserFirstName, DateTime.Now);
                 IsConnected = true;
 
                 AddRemoveUser(Settings.UserFirstName, true);
                 await Task.Delay(500);
-                SendLocalMessage(Settings.UserFirstName, DateTime.Now, "Connected...");
+
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pIsRunning = false;
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "Connected";
+                    pLoadingMessage = $"You succesfully connected to {Settings.Group}.\n\n Click 'OK' to continue.";
+                });
             }
             catch (Exception ex)
             {
-                SendLocalMessage(Settings.UserFirstName, DateTime.Now, $"Connection error: {ex.Message}");
-            }
-            finally
-            {
-                IsBusy = false;
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pIsRunning = false;
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "Connection failed";
+                    pLoadingMessage = $"The following error message was received while connecting to {Settings.Group}:\n{ex.Message}\n\n Click 'OK' to continue.";
+                });
             }
         }
 
@@ -170,7 +195,7 @@ namespace ITvitaeChat2.ViewModel
         }
 
         /// <summary>
-        /// Let's user select any file from his device and send it to every one in the chatroom
+        /// Let's user pick any file from the device and send it to every one in the chatroom via the server. This saves the file to the server for donwloading .
         /// </summary>
         /// <returns>void</returns>
         private async Task SendFile()
@@ -178,7 +203,13 @@ namespace ITvitaeChat2.ViewModel
             // Check if client is connected to the Server hub
             if (!IsConnected)
             {
-                await DialogService.DisplayAlert("Not connected", "Please connect to the server and try again.", "OK");
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "Not connected";
+                    pLoadingMessage = "Please connect to the server and try again. You can do this at your profile page.\n\n Click 'OK' to continue.";
+                });
                 return;
             }
 
@@ -188,7 +219,13 @@ namespace ITvitaeChat2.ViewModel
             // Check if file is null
             if (fileData == null)
             {
-                await DialogServices.DisplayAlert("File not found or selected", "Please select the file you want to send", "OK");
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "File not found or selected";
+                    pLoadingMessage = "Please select the file you want to send.\n\n Click 'OK' to continue.";
+                });
                 return;
             }
 
@@ -209,14 +246,14 @@ namespace ITvitaeChat2.ViewModel
 
                 using (HttpClient client = new HttpClient())
                 {
-                    // For each parameter in the API add that parameter. In this case the folder name and the file itself.
+                    // For each parameter in the API fill that parameter. In this case the folder name and the file itself.
                     using (MultipartFormDataContent formData = new MultipartFormDataContent())
                     {
                         formData.Add(new StringContent(Settings.UserEmail), "folderName");
                         formData.Add(fileStreamContent);
                         HttpResponseMessage responseMessage = await client.PostAsync(postUri, formData);
 
-                        await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
+                        //await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
 
                         if (responseMessage.IsSuccessStatusCode)
                         {
@@ -229,12 +266,18 @@ namespace ITvitaeChat2.ViewModel
             catch (Exception ex)
             {
                 SendLocalMessage(Settings.UserFirstName, DateTime.Now, $"Send failed: {ex.Message}");
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "Sending file failed";
+                    pLoadingMessage = $"The following error message was received:\n{ex.Message}.\n\n Click 'OK' to continue.";
+                });
             }
             finally
             {
                 IsBusy = false;
             }
-            
         }
 
         /// <summary>
@@ -242,72 +285,117 @@ namespace ITvitaeChat2.ViewModel
         /// </summary>
         /// <param name="file">The file</param>
         /// <param name="dateTime">The datetime of send</param>
-        /// <param name="user">The user that sends the file</param>
-        private void SendLocalFile(string user, DateTime dateTime, string folderName, string fileName)
+        /// <param name="_user">The user that sends the file</param>
+        private void SendLocalFile(string _user, DateTime dateTime, string folderName, string fileName)
         {
+            User user = Users.FirstOrDefault(u => u.Name == _user);
+
+            ChatFile chatFile = new ChatFile();
+            chatFile.FolderName = folderName;
+            chatFile.FileName = fileName;
+            chatFile.MessageDate = dateTime;
+            chatFile.User = _user;
+            chatFile.Color = user?.Color ?? Color.FromRgba(0, 0, 0, 0);
+
             Device.BeginInvokeOnMainThread(() =>
             {
-                var first = Users.FirstOrDefault(u => u.Name == user);
-
-                BaseMessages.Insert(0, new ChatFile
+                if (IsImage(fileName))
                 {
-                    FolderName = folderName,
-                    FileName = fileName,
-                    MessageDate = dateTime,
-                    User = user,
-                    Color = first?.Color ?? Color.FromRgba(0, 0, 0, 0)
-                });
+                    chatFile.Thumbnail = "outline_image_white_48.png"; //$"http{(Settings.UseHttps ? "s" : string.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/{folderName}/{fileName}";
+                }
+
+                BaseMessages.Insert(0, chatFile);
             });
         }
 
+        /// <summary>
+        /// Downloads a file to the local storage/pictures/ITvitaeDownloads
+        /// </summary>
+        /// <param name="chatFile"></param>
+        /// <returns></returns>
         private async Task DownloadFile(ChatFile chatFile)
         {
             // Check if client is connected to the Server hub
             if (!IsConnected)
             {
-                await DialogService.DisplayAlert("Not connected", "Please connect to the server and try again.", "OK");
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    IsBusy = true;
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "Not connected";
+                    pLoadingMessage = "Please connect to the server and try again. You can do this at your profile page.\n\n Click 'OK' to continue.";
+                });
                 return;
             }
+
+            // Check for runtime permission
+            if (await CrossPermissions.Current.CheckPermissionStatusAsync(Permission.Storage) != PermissionStatus.Granted)
+            {
+                var response = await CrossPermissions.Current.RequestPermissionsAsync(Permission.Storage);
+                if (response[Permission.Storage] != PermissionStatus.Granted)
+                {
+                    return;
+                }
+            }
+
+            // Preparing variables and properties
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                IsBusy = true;
+                pLoadingMessageTitle = "Dowloading file";
+                pLoadingMessage = $"Busy downloading {chatFile.FileName}. Please wait for a moment.";
+            });
+            IFolder itvitaeFolder = null;
+            IFile file = null;
+            Uri getUri = new Uri($"http{(Settings.UseHttps ? "s" : String.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/" +
+                    $"api/files?folderName={chatFile.FolderName}&fileName={chatFile.FileName}");
 
             // Try to get the file
             try
             {
-                IsBusy = true;
-
-                // The address get from
-                Uri getUri = new Uri($"http{(Settings.UseHttps ? "s" : String.Empty)}://{Settings.ServerIP}:{Settings.ServerPort}/" +
-                    $"api/files?folderName={chatFile.FolderName}&fileName={chatFile.FileName}");
-
                 using (HttpClient client = new HttpClient())
                 {
-                    // For each parameter in the API add that parameter. In this case the folder name and the file name.
-                    //using (MultipartFormDataContent getData = new MultipartFormDataContent())
-                    //{
-                    //    getData.Add(new StringContent(chatFile.FolderName), "folderName");
-                    //    getData.Add(new StringContent(chatFile.FileName), "fileName");
-
-                    //}
 
                     HttpResponseMessage responseMessage = await client.GetAsync(getUri);
 
-                    //await DialogServices.DisplayAlert("Response from server", $"Is succes: {responseMessage.IsSuccessStatusCode}\nMessage: {await responseMessage.Content.ReadAsStringAsync()}", "OK");
-
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        //string contentStream = await responseMessage.Content.ReadAsStringAsync();
-                        string fullFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), chatFile.FileName);
-                        byte[] fileByteArray = await responseMessage.Content.ReadAsByteArrayAsync();
-                        File.WriteAllBytes(fullFilePath, fileByteArray);
+                        // Create a new folder if it doesn't exist yet
+                        itvitaeFolder = await SpecialFolder.Current.Pictures.CreateFolderAsync("ITvitaeDownloads", CreationCollisionOption.OpenIfExists);
+
+                        // Create a file
+                        file = await itvitaeFolder.CreateFileAsync(chatFile.FileName, CreationCollisionOption.GenerateUniqueName);
+
+                        // Get the file data as byte array
+                        byte[] fileData = await responseMessage.Content.ReadAsByteArrayAsync();
+
+                        // Fill the newly created file with data
+                        using (System.IO.Stream stream = await file.OpenAsync(PCLStorage.FileAccess.ReadAndWrite))
+                        {
+                            stream.Write(fileData, 0, fileData.Length);
+                        }
+
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            pLoadingMessageTitle = "Download completed";
+                            pLoadingMessage = $"Your downloaded file is located at:\n{file.Path}.\n\nClick 'OK' to continue";
+                            pHasOKButton = true;
+                        });
                     }
                 }
             }
             catch (Exception ex)
             {
-                SendLocalMessage(Settings.UserFirstName, DateTime.Now, $"Send failed: {ex.Message}");
+                Device.BeginInvokeOnMainThread(() =>
+                {
+                    pHasOKButton = true;
+                    pLoadingMessageTitle = "Download failed";
+                    pLoadingMessage = $"The following error occured:\n{ex.Message}\nClick 'OK' to continue.";
+                });
             }
             finally
             {
-                IsBusy = false;
+                Device.BeginInvokeOnMainThread(() => { pIsRunning = false; });
             }
         }
 
@@ -397,17 +485,61 @@ namespace ITvitaeChat2.ViewModel
             }
         }
 
+        /// <summary>
+        /// Task for executing the donwload command if the message is a file. Acts as an OnClick event.
+        /// </summary>
+        /// <param name="selectedItem"></param>
+        /// <returns></returns>
         private Task SelectionChanged(object selectedItem)
         {
             if (selectedItem is ChatFile)
             {
                 DownloadFileCommand.Execute(selectedItem as ChatFile);
             }
-
-            SelectedItem = null;
+            Device.BeginInvokeOnMainThread(() => { SelectedItem = null; });
             return Task.CompletedTask;
         }
+
+        /// <summary>
+        /// Method for checking if any file is an image. (Not all image extensions are supported.)
+        /// </summary>
+        /// <param name="filename">name of file and its extension</param>
+        /// <returns>True if the file is an image</returns>
+        public bool IsImage(string filename)
+        {
+            // Get the file extension now so we only have to initialize it once and not every loop
+            string extension = Path.GetExtension(filename).ToLower();
+
+            // Check if the file is allowed
+            for (byte i = 0; i < ImageExtensions.Length; i++)
+            {
+                if (extension.Equals($".{ImageExtensions[i]}"))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Popup is dismissedand is removed/ made invisible
+        /// </summary>
+        private void OKClicked()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                pIsRunning = false;
+                IsBusy = false;
+                pHasOKButton = false;
+            });
+        }
+
+        /// <summary>
+        /// Exits the current page/chat room
+        /// </summary>
+        /// <returns>Void</returns>
+        private async Task Exit()
+        {
+            await App.Current.MainPage.Navigation.PopModalAsync();
+        }
     }
-
-
 }

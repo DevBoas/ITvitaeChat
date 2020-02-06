@@ -19,7 +19,7 @@
     </ContentPage.BindingContext>
     
     <ContentPage.ToolbarItems>
-        <ToolbarItem x:Name="ToolbarDone" Text="Leave" />
+        <ToolbarItem x:Name="ToolbarDone" IconImageSource="outline_exit_to_app_white_48.png" Command="{Binding pExitCommand}"/>
     </ContentPage.ToolbarItems>
 
     <ContentPage.Resources>
@@ -191,7 +191,8 @@
 
         </Frame>
 
-        <cv1:BusyCardView Grid.RowSpan="3" Grid.ColumnSpan="2" x:Name="BusyCard" IsVisible="{Binding IsBusy}"  HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"/>
+        <cv1:BusyCardView Grid.RowSpan="3" Grid.ColumnSpan="2" x:Name="BusyCard" IsVisible="{Binding IsBusy}" 
+                          HorizontalOptions="Center" VerticalOptions="Center" />
        
     </Grid>
 </ContentPage>

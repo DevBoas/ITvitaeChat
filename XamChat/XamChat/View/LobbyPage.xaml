@@ -3,13 +3,22 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:ITvitaeChat2.View"
              xmlns:viewmodel="clr-namespace:ITvitaeChat2.ViewModel"
+             xmlns:ffImage="clr-namespace:FFImageLoading.Forms;assembly=FFImageLoading.Forms"
              x:Class="ITvitaeChat2.View.LobbyPage"
              Title="Lobby">
 
-    <StackLayout>
-        <Label Margin="10,0" FontSize="Small" Text="Rooms"/>
-        <ListView ItemsSource="{Binding Rooms}"
-                  ItemSelected="ListView_ItemSelected"/>
-    </StackLayout>
+    <ContentPage.ToolbarItems>
+        <ToolbarItem IconImageSource="baseline_folder_white_48.png"
+                     Command="{Binding FolderClickedCommand}"/>
+    </ContentPage.ToolbarItems>
+
+    <Grid>
+        <Image Grid.Row="0" Source="logo_itvitae_liggend_anders_denken.png" Opacity="0.2"/>
+        <StackLayout>
+            <Label Margin="10,0" FontSize="Small" Text="Rooms"/>
+            <ListView ItemsSource="{Binding Rooms}"
+                      ItemSelected="ListView_ItemSelected"/>
+        </StackLayout>
+    </Grid>
 
 </ContentPage>

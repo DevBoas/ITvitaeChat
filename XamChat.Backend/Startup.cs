@@ -29,7 +29,7 @@ namespace ITvitaeChat2.Backend
             {
               builder.AllowAnyMethod()
                   .AllowAnyHeader()
-                  .WithOrigins("https://10.10.1.34:4444");
+                  .WithOrigins("http://10.10.1.34:4444");
             }));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
