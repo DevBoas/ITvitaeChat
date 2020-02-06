@@ -15,9 +15,10 @@ namespace ITvitaeChat2.Helpers
             private static readonly string defaultPort = "4444";
         #endif
 
+        // Not needed because the ITvitae server is within the ITvitae server. So there is no need for HTTPS.
         public static bool UseHttps
         {
-            get => (ServerIP != "localhost" && ServerIP != "10.0.2.2" && ServerIP != String.Empty);
+            get => false;//(ServerIP != "localhost" && ServerIP != "10.0.2.2");
         }
 
         public static string ServerIP
@@ -67,7 +68,6 @@ namespace ITvitaeChat2.Helpers
             set => Preferences.Set(nameof(UserLastName), value);
         }
 
-        //TODO Store user image
         private static readonly string defaultPicture = "tab_person.png";
         public static string UserPicture
         {

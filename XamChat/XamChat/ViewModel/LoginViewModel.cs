@@ -28,6 +28,7 @@ namespace ITvitaeChat2.ViewModel
         }
 
         public ICommand pLogInCommand { get; set; }
+        public ICommand pOKClickedCommand { get; }
         #endregion
 
         // Default constructor
@@ -36,6 +37,7 @@ namespace ITvitaeChat2.ViewModel
             Title = "ITvitae portal";
 
             pLogInCommand = new Command(async () => await AcquireTokenAsync());
+            pOKClickedCommand = new Command(() => OKClicked());
 
             // Use broker in case of iOS device
             if (Device.RuntimePlatform == Device.iOS) pUseBroker = true;
@@ -102,7 +104,11 @@ namespace ITvitaeChat2.ViewModel
             }
             catch (Exception ex)
             {
-                await App.Current.MainPage.DisplayAlert("API call to graph failed: ", ex.Message, "Dismiss");
+                //await App.Current.MainPage.DisplayAlert("API call to graph failed: ", ex.Message, "Dismiss");
+                IsBusy = true;
+                pHasOKButton = true;
+                pLoadingMessageTitle = "API call to graph failed";
+                pLoadingMessage = $"The following error message is received:\n{ex.Message}";
                 return ex.ToString();
             }
         }
@@ -116,6 +122,7 @@ namespace ITvitaeChat2.ViewModel
             Device.BeginInvokeOnMainThread(() =>
             {
                 IsBusy = true;
+                pIsRunning = true;
                 pLoadingMessageTitle = "Logging in";
                 pLoadingMessage = "Acquiring acces token silently";
             });
@@ -146,7 +153,7 @@ namespace ITvitaeChat2.ViewModel
                     }
                     catch (Exception ex2)
                     {
-                        Device.BeginInvokeOnMainThread(() => { IsBusy = false; });
+                        Device.BeginInvokeOnMainThread(() => { IsBusy = false; pIsRunning = false; });
                         await App.Current.MainPage.DisplayAlert("Acquire token interactive failed. See exception message for details: ", ex2.Message, "Dismiss");
                     }
                 }
@@ -172,8 +179,22 @@ namespace ITvitaeChat2.ViewModel
             {
                 await App.Current.MainPage.DisplayAlert("Authentication failed. See exception message for details: ", ex.Message, "Dismiss");
             }
+            finally
+            {
+                pIsRunning = false;
+                IsBusy = false;
+                
+            }
+        }
 
-            IsBusy = false;
+        private void OKClicked()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                pIsRunning = false;
+                IsBusy = false;
+                pHasOKButton = false;
+            });
         }
     }
 }

@@ -5,21 +5,33 @@
        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
        mc:Ignorable="d"
        BackgroundColor="Transparent"
-       x:Class="ITvitaeChat2.View.NewFolder.BusyCardView">
+       x:Class="ITvitaeChat2.View.NewFolder.BusyCardView"
+       Margin="50">
 
     <Grid RowSpacing="0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="20*"/>
-            <RowDefinition Height="80*"/>
+            <RowDefinition Height="AUTO"/>
+            <RowDefinition Height="AUTO"/>
         </Grid.RowDefinitions>
 
         <!--Header-->
         <BoxView Grid.Row="0" CornerRadius="10,10,0,0" BackgroundColor="{StaticResource PrimaryColor}"/>
-        <Label Grid.Row="0" Margin="16" Text="{Binding pLoadingMessageTitle, FallbackValue='No title found'}" TextColor="{StaticResource SecondaryTextColor}" FontAttributes="Bold" FontSize="Large"/>
+        <Label Grid.Row="0" Margin="16" Text="{Binding pLoadingMessageTitle, FallbackValue='No title found'}" TextColor="{StaticResource SecondaryTextColor}" 
+               FontAttributes="Bold" FontSize="Large"/>
 
         <!--Body-->
         <BoxView Grid.Row="1" CornerRadius="0,0,10,10" BackgroundColor="{StaticResource DisabledColor}"/>
-        <Label Grid.Row="1" Margin="16" Text="{Binding pLoadingMessage, FallbackValue='No message found'}"/>
-        <ActivityIndicator Grid.Row="1" Color="{StaticResource SecondaryDarkColor}" IsRunning="True" HorizontalOptions="Center" VerticalOptions="Center"/>
+        <StackLayout Grid.Row="1" Padding="8">
+            <Label Margin="16" Text="{Binding pLoadingMessage, FallbackValue='No message found'}"/>
+            <ActivityIndicator Color="{StaticResource SecondaryDarkColor}" IsRunning="{Binding pIsRunning}" IsVisible="{Binding pIsRunning}" HorizontalOptions="Center" 
+                           VerticalOptions="Center"/>
+            <Label TextColor="{StaticResource SecondaryDarkColor}" IsVisible="{Binding pHasOKButton}" Text="OK" FontSize="Medium" 
+               FontAttributes="Bold" VerticalOptions="End" HorizontalOptions="End" Margin="16">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding pOKClickedCommand}"/>
+                </Label.GestureRecognizers>
+            </Label>
+        </StackLayout>
+        
     </Grid>
 </ContentView>

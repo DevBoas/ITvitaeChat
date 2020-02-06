@@ -31,10 +31,14 @@ namespace ITvitaeChat2.Backend.Hubs
             await Clients.Group(groupName).SendAsync("ReceiveMessage", user, dateTime, message);
         }
 
-
-        public async Task SendFileGroup(string groupName, string user, DateTime dateTime, object file)
+        /// <summary>
+        /// Sends file message to all in the group
+        /// </summary>
+        /// <param name="folderName">User email</param>
+        /// <returns></returns>
+        public async Task SendFileGroup(string groupName, string user, DateTime dateTime, string folderName, string fileName)
         {
-            await Clients.Group(groupName).SendAsync("ReceiveFile", user, dateTime, file);
+            await Clients.Group(groupName).SendAsync("ReceiveFile", user, dateTime, folderName, fileName);
         }
     }
 }
